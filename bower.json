@@ -1,0 +1,24 @@
+{
+  "name": "ckp-reduction",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "output"
+  ],
+  "dependencies": {
+    "purescript-prelude": "^2.1.0",
+    "purescript-console": "^2.0.0",
+    "purescript-flare": "^2.0.0",
+    "purescript-drawing": "2.1.0",
+    "purescript-flarecheck": "^2.0.0",
+    "purescript-generics": "^3.1.0"
+  },
+  "devDependencies": {
+    "purescript-psci-support": "^2.0.0",
+    "purescript-debug": "^2.0.0"
+  },
+  "resolutions": {
+    "purescript-drawing": "^2.1.0"
+  }
+}
