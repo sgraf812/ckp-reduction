@@ -17,6 +17,7 @@ import Flare
 import Partial.Unsafe (unsafePartial)
 import Test.FlareCheck
 import Color
+import Color.Scheme.Harmonic
 import Color.Scheme.MaterialDesign
 import Debug.Trace
 
@@ -145,7 +146,19 @@ render items = ckpDrawing <> translate 200.0 0.0 epDrawing
     left = spy {x: 0.0, y: 150.0 - p.y - p.x*beta'}
     tangent = outlined (lineWidth 2.0 <> outlineColor red) (path (left : right : Nil))
 
-    epDrawing = mempty
+    epDrawing = columns
+    scaleFactorEP = 100.0/maxWeight
+    column color height = mempty
+      <> outline (rect height)
+      <> filled (fillColor color) (rect height)
+    rect :: Number -> Shape
+    rect height = rectangle 0.0 (150.0-height*scaleFactorEP) 20.0 (height*scaleFactorEP)
+    columns = fold $ mapWithIndex offsetColumns $ zipWith column columnColors items
+    offsetColumns c i = translate (toNumber i*30.0) 0.0 c
+
+columnColors :: List Color
+columnColors = indigo : red : teal : orange : blueGrey : brown : Nil
+
 
 complexToPoint :: Complex -> Point
 complexToPoint c =
@@ -161,7 +174,6 @@ ckpBackground = sector <> axis
   where
     sector = border <> clipped rect circ
     circ = filled (fillColor kitSeablue50) (circle 0.0 150.0 100.0)
-    outline = outlined (lineWidth 2.0 <> outlineColor black)
     border = mempty
           <> outline (path [{x: 0.0, y: 50.0}, {x: 0.0, y: 150.0}, {x: 100.0, y: 150.0}])
           <> outline (arc 0.0 150.0 (-pi/2.0) 0.0 100.0)
@@ -169,16 +181,19 @@ ckpBackground = sector <> axis
     rect = rectangle 0.0 50.0 100.0 100.0
     kitSeablue50 = rgb 152 167 197
 
+outline :: Shape -> Drawing
+outline = outlined (lineWidth 2.0 <> outlineColor black)
+
 flare :: forall eff. UI eff Drawing
 flare = render <<< map toNumber <$> sequence itemInput
   where
     itemInput =
-      ( int "Item 1" 2
-      : int "Item 2" 2
-      : int "Item 3" 3
-      : int "Item 4" 4
+      ( int "Item 1" 4
+      : int "Item 2" 3
+      : int "Item 3" 5
+      : int "Item 4" 2
       : int "Item 5" 4
-      : int "Item 6" 5
+      : int "Item 6" 2
       : Nil)
 
 main = runFlareDrawing "controls" "output" flare
