@@ -6,9 +6,11 @@ import Data.Complex
 import Data.Ord (comparing)
 import Data.Maybe (Maybe(..), fromJust, fromMaybe)
 import Data.Functor (map)
+import Data.Bifunctor (lmap, bimap)
 import Data.Foldable (maximum, maximumBy, sum)
-import Data.Traversable (sequence)
+import Data.Traversable (sequence, traverse)
 import Data.List
+import Data.Tuple
 import Data.Int (toNumber, fromNumber)
 import Data.Monoid
 import Data.Generic
@@ -146,7 +148,7 @@ render items = ckpDrawing <> translate 200.0 0.0 epDrawing
     left = spy {x: 0.0, y: 150.0 - p.y - p.x*beta'}
     tangent = outlined (lineWidth 2.0 <> outlineColor red) (path (left : right : Nil))
 
-    epDrawing = columns
+    epDrawing = columns <> translate 220.0 0.0 partitionDrawing
     scaleFactorEP = 100.0/maxWeight
     column color height = mempty
       <> outline (rect height)
@@ -155,6 +157,42 @@ render items = ckpDrawing <> translate 200.0 0.0 epDrawing
     rect height = rectangle 0.0 (150.0-height*scaleFactorEP) 20.0 (height*scaleFactorEP)
     columns = fold $ mapWithIndex offsetColumns $ zipWith column columnColors items
     offsetColumns c i = translate (toNumber i*30.0) 0.0 c
+
+    partitionDrawing = fromMaybe mempty $ do
+      s <- epSolution
+      case chooseIndicesForPartitions s items of
+        Tuple l r -> do
+          pure (partition l <> translate 30.0 0.0 (partition r))
+
+    unsafeIndex :: forall a. List a -> Int -> a
+    unsafeIndex list i = unsafePartial $ fromJust $ index list i
+
+    partition :: List Int -> Drawing
+    partition = go 150.0
+      where
+        go _ Nil = mempty
+        go y (idx:rest) = mempty
+          <> outline (rect2 y h)
+          <> filled (fillColor (unsafeIndex columnColors idx)) (rect2 y h)
+          <> go (y-h) rest
+          where
+            h :: Number
+            h = unsafeIndex items idx * scaleFactorParts
+
+        rect2 y h = rectangle 0.0 (y-h) 20.0 h
+
+        scaleFactorParts = 300.0/totalWeight
+
+chooseIndicesForPartitions :: List EPItem -> List EPItem -> Tuple (List Int) (List Int)
+chooseIndicesForPartitions solution allItems = bimap (map fst) (map fst) $ go solution taggedItems
+  where
+    taggedItems = zip (0 .. (length allItems - 1)) allItems
+
+    go :: List EPItem -> List (Tuple Int EPItem) -> Tuple (List (Tuple Int EPItem)) (List (Tuple Int EPItem))
+    go Nil items = Tuple Nil items
+    go (x:xs) items = lmap (item:_) (go xs (delete item items))
+      where
+        item = unsafePartial $ fromJust $ head $ filter (\(Tuple i item) -> item == x) items
 
 columnColors :: List Color
 columnColors = indigo : red : teal : orange : blueGrey : brown : Nil
